@@ -1,7 +1,7 @@
 name: Build and release FPK
 on:
   push:
-    branches: [main]
+    branches: [main, review/custom-data]
   workflow_dispatch:
 permissions:
   contents: write
@@ -36,6 +36,7 @@ jobs:
           path: ps5upload.fpk
           if-no-files-found: error
       - name: Publish tested FPK
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

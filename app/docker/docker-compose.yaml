@@ -23,7 +23,8 @@ services:
         target: /staging-root
         bind:
           create_host_path: false
-      - ps5upload-data:/data
+      # Blank keeps the existing named volume; an absolute path is a bind mount.
+      - "${wizard_data_path:-ps5upload-data}:/data"
     logging:
       driver: json-file
       options:
