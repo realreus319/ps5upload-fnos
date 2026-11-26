@@ -22,6 +22,15 @@ check_dir() {
 check_dir "游戏目录" "${wizard_game_path:-}"
 check_dir "临时安装包目录" "${wizard_staging_path:-}"
 check_dir "应用数据目录" "${wizard_data_path:-}"
+check_id() {
+  local label="$1" value="$2"
+  [ -n "$value" ] || return 0
+  if [[ ! "$value" =~ ^[1-9][0-9]{0,9}$ ]] || [ "$value" -gt 2147483647 ]; then
+    errors+=("$label：请输入 1 至 2147483647 的数字，或留空。")
+  fi
+}
+check_id UID "${wizard_puid:-}"
+check_id GID "${wizard_pgid:-}"
 if [ "${#errors[@]}" -gt 0 ]; then
   printf '%s\n' "${errors[@]}" >&2
   if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then

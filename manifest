@@ -1,5 +1,5 @@
 appname=ps5upload
-version=0.1.6
+version=0.1.7
 display_name=PS5Upload
 desc=PS5Upload 官方 Docker 镜像的飞牛应用封装
 source=thirdparty

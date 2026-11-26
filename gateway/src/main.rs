@@ -7,6 +7,8 @@ use hyper_util::rt::TokioIo;
 use http_body_util::{BodyExt, Full, combinators::UnsyncBoxBody};
 use tokio::net::{UnixListener, TcpStream};
 use std::os::unix::fs::FileTypeExt;
+use std::os::unix::process::CommandExt;
+use tokio::process::{Child, Command};
 use tokio::signal::unix::{signal, SignalKind};
 
 type Body = UnsyncBoxBody<Bytes, hyper::Error>;
@@ -103,9 +105,78 @@ fn bind_socket(path: &str) -> Result<UnixListener, Error> {
     Ok(listener)
 }
 
+// The root supervisor never listens on a network/socket or modifies mounted files.
+fn parse_id(name: &str, fallback: u32) -> Result<u32, Error> {
+    match env::var(name) {
+        Ok(v) if !v.is_empty() => {
+            if !v.bytes().all(|b| b.is_ascii_digit()) { return Err(format!("invalid {name}: use a nonzero numeric ID").into()); }
+            let n: u32 = v.parse()?;
+            if n == 0 || n > 2147483647 { return Err(format!("invalid {name}: ID must be 1..2147483647").into()); }
+            Ok(n)
+        }
+        _ => Ok(fallback),
+    }
+}
+
+fn spawn_as(program: &str, args: &[String], uid: u32, gid: u32, extra_gid: Option<u32>) -> Result<Child, Error> {
+    let mut c = std::process::Command::new(program);
+    c.args(args);
+    // Clear inherited root groups, then drop GID and UID before exec.
+    unsafe {
+        c.pre_exec(move || {
+            let groups = [extra_gid.unwrap_or(gid) as libc::gid_t];
+            if libc::setgroups(1, groups.as_ptr()) != 0
+                || libc::setgid(gid as libc::gid_t) != 0
+                || libc::setuid(uid as libc::uid_t) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+    Ok(Command::from(c).kill_on_drop(true).spawn()?)
+}
+
+async fn stop_child(c: &mut Child) -> Result<(), Error> {
+    if let Some(pid) = c.id() { unsafe { libc::kill(pid as i32, libc::SIGTERM); } }
+    if tokio::time::timeout(Duration::from_secs(5), c.wait()).await.is_err() {
+        c.kill().await?;
+    }
+    Ok(())
+}
+
+async fn supervise(args: &[String]) -> Result<(), Error> {
+    if args.len() < 3 { return Err("usage: --supervise SOCKET TARGET ENGINE".into()); }
+    let pkg_uid = parse_id("FNOS_PACKAGE_UID", 65532)?;
+    let pkg_gid = parse_id("FNOS_PACKAGE_GID", 65532)?;
+    let custom = env::var("FNOS_CUSTOM_DATA").map(|s| !s.is_empty()).unwrap_or(false);
+    let uid = parse_id("FNOS_ENGINE_UID", if custom { 1000 } else { pkg_uid })?;
+    let gid = parse_id("FNOS_ENGINE_GID", if custom { 1000 } else { pkg_gid })?;
+    let mut term = signal(SignalKind::terminate())?;
+    let mut int = signal(SignalKind::interrupt())?;
+    eprintln!("fnOS supervisor: gateway {pkg_uid}:{pkg_gid}; engine {uid}:{gid}");
+    let exe = env::current_exe()?;
+    let exe = exe.to_str().ok_or("invalid gateway executable path")?;
+    let mut gateway = spawn_as(exe, &args[..2], pkg_uid, pkg_gid, None)?;
+    let mut engine = match spawn_as(&args[2], &args[3..], uid, gid, Some(pkg_gid)) {
+        Ok(c) => c,
+        Err(e) => { let _ = stop_child(&mut gateway).await; return Err(e); }
+    };
+    let unexpected = tokio::select! {
+        s = gateway.wait() => Some(format!("gateway exited: {s:?}")),
+        s = engine.wait() => Some(format!("engine exited: {s:?}")),
+        _ = term.recv() => None,
+        _ = int.recv() => None,
+    };
+    let (a,b) = tokio::join!(stop_child(&mut gateway), stop_child(&mut engine));
+    a?; b?;
+    if let Some(e) = unexpected { return Err(e.into()); }
+    Ok(())
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
+    if args.get(1).map(String::as_str) == Some("--supervise") { return supervise(&args[2..]).await; }
     let socket = args.get(1).ok_or("usage: gateway-rust SOCKET TARGET [ENGINE]")?;
     let target = args.get(2).cloned().unwrap_or_else(|| "127.0.0.1:19113".into());
     let mut term = signal(SignalKind::terminate())?;

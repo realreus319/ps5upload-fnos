@@ -1,7 +1,7 @@
 name: Build and release FPK
 on:
   push:
-    branches: [main, review/custom-data, review/path-validation, review/rust-gateway]
+    branches: [main, review/custom-data, review/path-validation, review/rust-gateway, review/runtime-identity]
   workflow_dispatch:
 permissions:
   contents: write

@@ -5,10 +5,14 @@ trap 'rm -rf "$work"' EXIT
 mkdir "$work/中文 game" "$work/staging" "$work/data"
 touch "$work/file"
 export TRIM_TEMP_LOGFILE="$work/error.log"
-unset wizard_game_path wizard_staging_path wizard_data_path
+unset wizard_game_path wizard_staging_path wizard_data_path wizard_puid wizard_pgid
 for hook in install_init install_callback config_init config_callback; do
   script="cmd/$hook"
   bash "$script"
+  wizard_puid=1000 wizard_pgid=1000 bash "$script"
+  if wizard_puid=0 bash "$script"; then exit 1; fi
+  if wizard_pgid=2147483648 bash "$script"; then exit 1; fi
+  if wizard_puid=abc bash "$script"; then exit 1; fi
   wizard_game_path="$work/中文 game" wizard_staging_path="$work/staging" wizard_data_path="$work/data" bash "$script"
   if wizard_game_path="$work/missing" wizard_staging_path="$work/file" wizard_data_path=relative bash "$script"; then
     echo "Invalid paths accepted by $hook" >&2; exit 1

@@ -5,11 +5,20 @@ services:
     container_name: ps5upload-fnos
     network_mode: host
     init: true
-    entrypoint: ["/fnos-gateway", "/gateway/app.sock", "127.0.0.1:19113", "/ps5upload-engine"]
+    entrypoint: ["/fnos-gateway", "--supervise", "/gateway/app.sock", "127.0.0.1:19113", "/ps5upload-engine"]
     stop_grace_period: 15s
     restart: unless-stopped
-    user: "${TRIM_UID:-65532}:${TRIM_GID:-65532}"
+    # Only the signal/identity supervisor starts as root; both serving children drop privileges.
+    user: "0:0"
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, KILL]
+    security_opt: ["no-new-privileges:true"]
     environment:
+      FNOS_PACKAGE_UID: "${TRIM_UID:-65532}"
+      FNOS_PACKAGE_GID: "${TRIM_GID:-65532}"
+      FNOS_ENGINE_UID: "${wizard_puid:-}"
+      FNOS_ENGINE_GID: "${wizard_pgid:-}"
+      FNOS_CUSTOM_DATA: "${wizard_data_path:-}"
       PS5_ADDR: "${wizard_ps5_addr:-}"
       PS5UPLOAD_ALLOW_IP: "0.0.0.0/0"
       PS5UPLOAD_BASE_URL: /app/ps5upload/
@@ -34,7 +43,7 @@ services:
         bind:
           create_host_path: false
       - type: bind
-        source: "${wizard_staging_path:-${TRIM_PKGVAR:-/var/apps/ps5upload/var}}"
+        source: "${wizard_staging_path:-${wizard_data_path:-${TRIM_PKGVAR:-/var/apps/ps5upload/var}}}"
         target: /staging-root
         bind:
           create_host_path: false
