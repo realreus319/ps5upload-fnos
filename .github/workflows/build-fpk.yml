@@ -20,13 +20,14 @@ jobs:
         run: |
           for f in cmd/* build.sh; do bash -n "$f"; done
           for f in config/* wizard/* app/ui/config; do python3 -m json.tool "$f" >/dev/null; done
-          GAME_PATH=/tmp DATA_PATH=/tmp ENGINE_UID=1000 ENGINE_GID=1000 ALLOW_IP=192.168.1.0/24 docker compose -f app/docker/docker-compose.yaml config -q
+          TRIM_PKGVAR=/tmp TRIM_UID=1000 TRIM_GID=1000 docker compose -f app/docker/docker-compose.yaml config -q
       - name: Package
         run: |
           bash build.sh
           test -s ps5upload.fpk
           mkdir -p /tmp/fpk
-          cp ps5upload.fpk /tmp/fpk/PS5Upload-fnos-0.1.0.fpk
+          version=$(sed -n 's/^version=//p' manifest)
+          cp ps5upload.fpk "/tmp/fpk/PS5Upload-fnos-$version.fpk"
           sha256sum /tmp/fpk/*.fpk
       - uses: actions/upload-artifact@v4
         with:
