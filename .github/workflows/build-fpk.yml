@@ -33,3 +33,17 @@ jobs:
           name: PS5Upload-fnos
           path: /tmp/fpk/*.fpk
           if-no-files-found: error
+      - name: Publish FPK preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version=//p' manifest)
+          tag="v$version"
+          cd /tmp/fpk
+          sha256sum *.fpk > SHA256SUMS.txt
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" *.fpk SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" *.fpk SHA256SUMS.txt --target "$GITHUB_SHA" --title "PS5Upload fnOS $version" --notes "Official fnpack build passed. Preview: fnOS device installation and folder authorization are not yet verified." --prerelease --repo "$GITHUB_REPOSITORY"
+          fi
