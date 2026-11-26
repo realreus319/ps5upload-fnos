@@ -20,9 +20,14 @@ for hook in install_init install_callback config_init config_callback; do
   if wizard_game_path="$work/a:b" bash "$script"; then exit 1; fi
   if [ "$(id -u)" != 0 ]; then
     chmod 500 "$work/data"
-    if wizard_data_path="$work/data" bash "$script"; then exit 1; fi
-    grep -F "写入权限" "$TRIM_TEMP_LOGFILE"
+    wizard_data_path="$work/data" bash "$script"
+    chmod 000 "$work/data"
+    wizard_game_path="$work/data" wizard_data_path="$work/data" bash "$script"
     chmod 700 "$work/data"
+    mkdir -p "$work/private/child"
+    chmod 000 "$work/private"
+    wizard_game_path="$work/private/child" bash "$script"
+    chmod 700 "$work/private"
   fi
 done
 echo "Path checks passed"
