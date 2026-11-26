@@ -4,7 +4,7 @@
     "items": [
       {
         "type": "tips",
-        "helpText": "游戏目录填写 NAS 上已有目录的绝对路径，留空使用应用私有目录。修改前请结束安装与串流任务。"
+        "helpText": "修改前请结束安装与串流任务。目录使用绝对路径，应用用户须有对应权限。"
       },
       {
         "type": "text",
@@ -13,9 +13,13 @@
       },
       {
         "type": "text",
-        "field": "wizard_allow_ip",
-        "label": "允许访问的 IP 或 CIDR",
-        "initValue": "192.168.1.0/24"
+        "field": "wizard_ps5_addr",
+        "label": "PS5 IP 地址（可选）"
+      },
+      {
+        "type": "text",
+        "field": "wizard_staging_path",
+        "label": "临时安装包目录（可选，宿主机路径）"
       }
     ]
   }
