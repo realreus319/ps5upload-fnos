@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "ps5upload.main": {
+      "title": "PS5Upload",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "http",
+      "port": "19113",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}
