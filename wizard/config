@@ -1,15 +1,10 @@
 [
   {
-    "stepTitle": "修改部署配置",
+    "stepTitle": "PS5Upload 部署设置",
     "items": [
       {
         "type": "tips",
-        "helpText": "留空保留原配置。修改时请先结束所有安装及串流任务。更新镜像请使用飞牛 Docker 管理器。"
-      },
-      {
-        "type": "text",
-        "field": "wizard_game_path",
-        "label": "新游戏目录（可选）"
+        "helpText": "在飞牛访问权限中选择游戏目录。当前仅使用第一个授权目录；修改前结束安装和串流任务。留空保留原网段。"
       },
       {
         "type": "text",
