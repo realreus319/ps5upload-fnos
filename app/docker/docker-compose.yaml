@@ -23,13 +23,13 @@ services:
         target: /staging-root
         bind:
           create_host_path: false
-      # Blank keeps the existing named volume; an absolute path is a bind mount.
-      - "${wizard_data_path:-ps5upload-data}:/data"
+      - type: bind
+        source: "${wizard_data_path:-${TRIM_PKGVAR:-/var/apps/ps5upload/var}}"
+        target: /data
+        bind:
+          create_host_path: false
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
-volumes:
-  ps5upload-data:
-    name: ps5upload-fnos_ps5upload-data
