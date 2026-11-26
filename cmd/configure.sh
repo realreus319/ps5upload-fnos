@@ -6,17 +6,28 @@ mode="$1"
 mkdir -p "$TRIM_PKGETC" "$TRIM_PKGVAR/data"
 cfg="$TRIM_PKGETC/ps5upload.env"
 dest="$TRIM_APPDEST/docker/.env"
-old_path=""; old_ip=""
+old_ip=""
 if [ -f "$cfg" ]; then
- old_path=$(sed -n "s/^GAME_PATH='\(.*\)'$/\1/p" "$cfg")
  old_ip=$(sed -n "s/^ALLOW_IP='\(.*\)'$/\1/p" "$cfg")
 fi
-game="${wizard_game_path:-$old_path}"
-ip="${wizard_allow_ip:-$old_ip}"
+game=""
+# Native fnOS permission dialog is the only source of external paths.
+# Single-directory wrapper: first authorized directory, or an empty private library.
+IFS=: read -r -a authorized <<< "${TRIM_DATA_ACCESSIBLE_PATHS:-}"
+for path in "${authorized[@]}"; do
+ [ -n "$path" ] || continue
+ game="$path"
+ break
+done
+if [ -z "$game" ]; then
+ game="$TRIM_PKGVAR/library"
+ mkdir -p "$game"
+fi
+ip="${wizard_allow_ip:-${old_ip:-192.168.1.0/24}}"
 [ -n "$game" ] && [ -d "$game" ] || fail "游戏目录不存在"
 game=$(realpath -e -- "$game")
 # Do not allow arbitrary system directories or dotenv metacharacters.
-case "$game" in /vol[0-9]*/*) ;; *) fail "请选择飞牛存储卷中的共享目录";; esac
+case "$game" in /vol[0-9]*/*) ;; "$TRIM_PKGVAR/library") ;; *) fail "请选择飞牛存储卷中的共享目录";; esac
 case "$game$TRIM_PKGVAR" in *"'"*|*$'\n'*|*$'\r'*|*'\\'*) fail "路径包含不支持的字符";; esac
 [ -r "$game" ] && [ -x "$game" ] || fail "应用用户没有游戏目录读取权限"
 [[ "$ip" =~ ^(10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3})/(2[4-9]|3[0-2])$ ]] || fail "请输入可信私有 IPv4 网段，掩码 /24 至 /32"
