@@ -1,10 +1,10 @@
-name: Review FPK and real container
+name: Build and release FPK
 on:
   push:
-    branches: [review/native-directory]
+    branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -32,6 +32,22 @@ jobs:
           sha256sum ps5upload.fpk
       - uses: actions/upload-artifact@v4
         with:
-          name: PS5Upload-review-only
+          name: PS5Upload-fnos
           path: ps5upload.fpk
           if-no-files-found: error
+      - name: Publish tested FPK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version=//p' manifest)
+          tag="v$version"
+          mkdir -p /tmp/release
+          cp ps5upload.fpk "/tmp/release/PS5Upload-fnos-$version.fpk"
+          cd /tmp/release
+          sha256sum *.fpk > SHA256SUMS.txt
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" *.fpk SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" *.fpk SHA256SUMS.txt --target "$GITHUB_SHA" --title "PS5Upload fnOS $version" --notes "Official fnpack packaging and real Docker smoke tests passed. fnOS device installation, permissions and configuration changes still require device verification. Paths are entered as text. IPv4 access is unrestricted: trusted network only." --repo "$GITHUB_REPOSITORY"
+          fi
