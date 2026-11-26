@@ -1,15 +1,21 @@
 [
   {
-    "stepTitle": "PS5Upload 部署设置",
+    "stepTitle": "部署设置",
     "items": [
       {
         "type": "tips",
-        "helpText": "在飞牛访问权限中选择游戏目录。当前仅使用第一个授权目录；修改前结束安装和串流任务。留空保留原网段。"
+        "helpText": "游戏目录填写 NAS 上已有目录的绝对路径，留空使用应用私有目录。修改前请结束安装与串流任务。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_game_path",
+        "label": "游戏目录（宿主机路径）"
       },
       {
         "type": "text",
         "field": "wizard_allow_ip",
-        "label": "新可信网段（可选）"
+        "label": "允许访问的 IP 或 CIDR",
+        "initValue": "192.168.1.0/24"
       }
     ]
   }
