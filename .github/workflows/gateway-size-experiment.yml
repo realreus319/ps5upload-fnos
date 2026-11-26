@@ -1,0 +1,34 @@
+name: Gateway Rust size experiment
+on:
+  push:
+    branches: [review/gateway-size]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build stripped static musl binary
+        working-directory: experiments/gateway-rust
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-musl
+          cargo build --release --target x86_64-unknown-linux-musl
+      - name: Measure and run protocol smoke tests
+        working-directory: experiments/gateway-rust
+        run: |
+          set -euo pipefail
+          bin=target/x86_64-unknown-linux-musl/release/gateway-rust
+          gzip -9 -c "$bin" > "$bin.gz"
+          xz -9 -c "$bin" > "$bin.xz"
+          wc -c "$bin" "$bin.gz" "$bin.xz"
+          file "$bin"
+          python3 smoke.py "$bin"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: experimental-gateway-rust
+          path: experiments/gateway-rust/target/x86_64-unknown-linux-musl/release/gateway-rust
