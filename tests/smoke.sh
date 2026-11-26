@@ -74,14 +74,14 @@ test "$(stat -c %u "$TRIM_APPDEST/app.sock")" = 65532
 for pid in $(docker top ps5upload-fnos -eo pid,uid,args | awk '$2==1000 || $2==65532 {print $1}'); do
   sudo awk '/^Cap(Eff|Prm):/ {if ($2 !~ /^0+$/) exit 1}' "/proc/$pid/status"
 done
-docker top ps5upload-fnos -eo uid,gid,args
-docker top ps5upload-fnos -eo uid,gid,args | grep -E '^ *1000 +1000 +/ps5upload-engine'
-docker top ps5upload-fnos -eo uid,gid,args | grep -E '^ *65532 +65532 +/fnos-gateway /gateway/app.sock'
+docker top ps5upload-fnos -eo pid,uid,gid,args
+docker top ps5upload-fnos -eo pid,uid,gid,args | grep -E '^ *[0-9]+ +1000 +1000 +/ps5upload-engine'
+docker top ps5upload-fnos -eo pid,uid,gid,args | grep -E '^ *[0-9]+ +65532 +65532 +/fnos-gateway /gateway/app.sock'
 export wizard_puid=1001 wizard_pgid=1001
 sudo chown -R 1001:1001 "$wizard_game_path" "$wizard_data_path"
 compose up -d --wait --wait-timeout 120
 test "$(identity)" = "$private_key"
-docker top ps5upload-fnos -eo uid,gid,args | grep -E '^ *1001 +1001 +/ps5upload-engine'
+docker top ps5upload-fnos -eo pid,uid,gid,args | grep -E '^ *[0-9]+ +1001 +1001 +/ps5upload-engine'
 docker run --rm --user 1001:1001 --volumes-from ps5upload-fnos busybox:1.37 sh -ec 'test "$(cat /pkgs/private.pkg)" = private; test -e /data/.ps5upload/ava/identity'
 # Actual gateway socket and engine, simulated fnOS administrator headers.
 for i in $(seq 1 30); do [ -S "$TRIM_APPDEST/app.sock" ] && break; sleep 1; done
