@@ -4,7 +4,10 @@ work=$(mktemp -d)
 chmod 755 "$work"
 export TRIM_UID=65532 TRIM_GID=65532
 export TRIM_APPDEST="$work/target"
-mkdir -p "$TRIM_APPDEST"
+mkdir -p "$TRIM_APPDEST/bin"
+cp app/bin/gateway-rust "$TRIM_APPDEST/bin/"
+chmod 755 "$TRIM_APPDEST/bin/gateway-rust"
+sudo chown 65532:65532 "$TRIM_APPDEST"
 export TRIM_DATA_SHARE_PATHS="$work/默认 游戏目录" TRIM_PKGVAR="$work/appdata"
 mkdir -p "$TRIM_DATA_SHARE_PATHS" "$TRIM_PKGVAR" "$work/existing games" "$work/upload cache"
 chmod 755 "$TRIM_DATA_SHARE_PATHS" "$work/existing games"
@@ -55,9 +58,16 @@ for i in $(seq 1 30); do [ -S "$TRIM_APPDEST/app.sock" ] && break; sleep 1; done
 sock="$TRIM_APPDEST/app.sock"
 test -S "$sock"
 base=http://192.168.1.250:5666/app/ps5upload
-test "$(curl -s --unix-socket "$sock" -o /dev/null -w '%{http_code}' "$base/")" = 403
-curl -fsS --unix-socket "$sock" -H 'X-Trim-Isadmin: true' -H 'Host: 192.168.1.250:5666' -D "$work/headers" "$base/" > "$work/page"
+test "$(sudo curl -s --unix-socket "$sock" -o /dev/null -w '%{http_code}' "$base/")" = 403
+sudo curl -fsS --unix-socket "$sock" -H 'X-Trim-Isadmin: true' -H 'Host: 192.168.1.250:5666' -D "$work/headers" "$base/" > "$work/page"
 grep -qi '^x-frame-options: SAMEORIGIN' "$work/headers"
 grep -qi "frame-ancestors 'self'" "$work/headers"
-curl -fsS --unix-socket "$sock" -H 'X-Trim-Isadmin: true' -H 'Host: 192.168.1.250:5666' -H 'Origin: http://192.168.1.250:5666' "$base/api/jobs" >/dev/null
-echo "Direct wizard variables, custom data path and gateway smoke tests passed"
+sudo curl -fsS --unix-socket "$sock" -H 'X-Trim-Isadmin: true' -H 'Host: 192.168.1.250:5666' -H 'Origin: http://192.168.1.250:5666' "$base/api/jobs" >/dev/null
+test "$(compose ps -q | wc -l)" -eq 1
+docker inspect -f '{{.Config.Image}}' ps5upload-fnos | grep -Fx ghcr.io/phantomptr/ps5upload-engine-webui:latest
+compose stop
+test ! -S "$sock"
+compose up -d --wait --wait-timeout 120
+test -S "$sock"
+sudo curl -fsS --unix-socket "$sock" -H 'X-Trim-Isadmin: true' "$base/api/jobs" >/dev/null
+echo "Single official container, persistent storage and gateway lifecycle passed"

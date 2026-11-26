@@ -1,7 +1,7 @@
 name: Build and release FPK
 on:
   push:
-    branches: [main, review/custom-data, review/path-validation]
+    branches: [main, review/custom-data, review/path-validation, review/rust-gateway]
   workflow_dispatch:
 permissions:
   contents: write
@@ -19,6 +19,17 @@ jobs:
           python3 -c 'import json; assert json.load(open("config/privilege"))["defaults"]["run-as"] == "package"'
       - name: Validate directory inputs
         run: bash tests/validate-paths.sh
+      - name: Build minimal static Rust gateway
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-musl
+          cargo build --manifest-path gateway/Cargo.toml --release --target x86_64-unknown-linux-musl
+          mkdir -p app/bin
+          install -m 755 gateway/target/x86_64-unknown-linux-musl/release/gateway-rust app/bin/gateway-rust
+          file app/bin/gateway-rust
+          wc -c app/bin/gateway-rust
+          python3 gateway/smoke.py app/bin/gateway-rust
       - name: Exercise real engine and storage
         run: bash tests/smoke.sh
       - name: Install official packager
@@ -32,6 +43,7 @@ jobs:
           bash build.sh
           test -s ps5upload.fpk
           sha256sum ps5upload.fpk
+          wc -c ps5upload.fpk
       - uses: actions/upload-artifact@v4
         with:
           name: PS5Upload-fnos

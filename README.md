@@ -10,6 +10,6 @@
 
 安装与配置阶段检查所有非空自定义目录的格式、存在性及运行脚本身份的访问权限，错误时返回非零并写入可用的 TRIM_TEMP_LOGFILE。留空不检查系统尚未创建的默认目录。Compose 禁止自动创建绑定源目录。原生向导未公开宿主机路径实时校验接口，因此不存在的目录在安装前置阶段报错，不保证在点击下一步时直接显示字段内错误；实际回调时序与提示仍须在 fnOS 真机确认。
 
-## 桌面入口
+## 桌面入口（x86 候选版）
 
-官方 WebUI 设置 SAMEORIGIN 和 frame-ancestors self，不能直接从飞牛桌面跨端口 iframe。候选版使用飞牛统一网关和仅监听 Unix Socket 的 nginx 反代，保留上游响应头与 Host 网络，不新增 TCP 监听。直接访问路径为 http://NAS-IP:19113/app/ps5upload/（仅可信局域网）。网关代理需要飞牛转发管理员 Header；CI 模拟该 Header，并不代表飞牛真机登录态已验收。公开域名可能被上游 Host 校验拒绝，本版不关闭该安全检查。Docker Host 网络没有端口映射图标，这是正常现象。
+单个官方 Docker 容器，Host 网络不变。FPK 内置静态 Rust 代理，Compose 只读挂载并用它作为启动包装器；包装器启动原始 /ps5upload-engine 并监听 Unix Socket，不修改镜像、不增加容器或宿主机服务。Docker 停止时转发 TERM 并等待原始引擎退出。网关 Socket 权限 0660，不自动开放给所有本地用户。飞牛网关是否可访问此 Socket 需要真机确认。HTTP 反代保留原始 Host/Origin 与上游安全响应头，管理员请求通过，其他请求拒绝。直连 URL 改为 http://NAS-IP:19113/app/ps5upload/，包传输路径由官方 engine 处理。当前 x86 静态二进制，ARM 未打包。真实 fnOS 的网关身份、路径权限和启停仍待验证。禁止将无密码的 19113 暴露公网。

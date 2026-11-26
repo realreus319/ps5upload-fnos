@@ -4,6 +4,7 @@ cd "$(dirname "$0")"
 root="$PWD"
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
+test -x app/bin/gateway-rust || { echo 'Build static Rust gateway first' >&2; exit 1; }
 python3 scripts/icons.py
 mkdir -p "$stage/ps5upload"
 cp -a manifest ICON.PNG ICON_256.PNG app cmd config wizard "$stage/ps5upload/"
