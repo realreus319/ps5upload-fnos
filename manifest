@@ -1,0 +1,13 @@
+appname=ps5upload
+version=0.1.0
+display_name=PS5Upload
+desc=PS5Upload 官方 Docker 镜像的飞牛应用封装
+source=thirdparty
+platform=all
+maintainer=realreus319
+distributor=realreus319
+desktop_uidir=ui
+desktop_applaunchname=ps5upload.main
+service_port=19113
+checkport=true
+ctl_stop=true
