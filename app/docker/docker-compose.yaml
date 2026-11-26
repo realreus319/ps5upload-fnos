@@ -1,0 +1,23 @@
+services:
+  ps5upload:
+    image: ghcr.io/phantomptr/ps5upload-engine-webui:latest
+    container_name: ps5upload-fnos
+    network_mode: host
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    user: "${ENGINE_UID:?missing UID}:${ENGINE_GID:?missing GID}"
+    environment:
+      PS5UPLOAD_ALLOW_IP: "${ALLOW_IP:?configure trusted LAN}"
+      PS5UPLOAD_BROWSE_ROOTS: /pkgs
+    volumes:
+      - type: bind
+        source: "${GAME_PATH:?choose game directory}"
+        target: /pkgs
+        read_only: true
+      - type: bind
+        source: "${DATA_PATH:?missing data path}"
+        target: /data
