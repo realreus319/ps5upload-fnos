@@ -9,15 +9,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    user: "${ENGINE_UID:?missing UID}:${ENGINE_GID:?missing GID}"
+    user: "${TRIM_UID:-65532}:${TRIM_GID:-65532}"
     environment:
-      PS5UPLOAD_ALLOW_IP: "${ALLOW_IP:?configure trusted LAN}"
+      PS5UPLOAD_ALLOW_IP: "${wizard_allow_ip:-192.168.1.0/24}"
       PS5UPLOAD_BROWSE_ROOTS: /pkgs
     volumes:
-      - type: bind
-        source: "${GAME_PATH:?choose game directory}"
-        target: /pkgs
-        read_only: true
-      - type: bind
-        source: "${DATA_PATH:?missing data path}"
-        target: /data
+      - "${wizard_game_path:-${TRIM_PKGVAR}/library}:/pkgs:ro"
+      - ps5upload-data:/data
+volumes:
+  ps5upload-data:
