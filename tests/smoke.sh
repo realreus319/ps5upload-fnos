@@ -15,6 +15,7 @@ sudo chown 65532:65532 "$TRIM_PKGVAR" "$work/upload cache"
 echo default > "$TRIM_DATA_SHARE_PATHS/default.pkg"
 echo existing > "$work/existing games/existing.pkg"
 compose(){ docker compose -p ps5upload-fnos -f app/docker/docker-compose.yaml "$@"; }
+identity(){ curl -fsS http://127.0.0.1:19113/app/ps5upload/api/ava1/identity | python3 -c 'import json,sys; k=json.load(sys.stdin)["public_key"]; assert len(k)==64; print(k)'; }
 cleanup(){ compose logs --tail 80 || true; compose down -v || true; sudo rm -rf "$work"; }
 trap cleanup EXIT
 unset wizard_game_path wizard_staging_path wizard_ps5_addr wizard_data_path wizard_puid wizard_pgid
@@ -49,9 +50,11 @@ curl -fsS http://127.0.0.1:19113/app/ps5upload/api/jobs >/dev/null
 docker run --rm --user 1000:1000 --volumes-from ps5upload-fnos busybox:1.37 sh -ec 'test ! -e /data/probe; echo custom-data >/data/custom-probe; mkdir -p /staging-root/ps5upload-staging; touch /staging-root/ps5upload-staging/custom'
 test "$(sudo cat "$wizard_data_path/custom-probe")" = custom-data
 sudo test -f "$wizard_data_path/ps5upload-staging/custom"
+key_before=$(identity)
 sudo test -e "$wizard_data_path/.ps5upload/ava/identity"
 ! compose logs --tail 40 | grep -F "no AVA1 identity at"
 compose up -d --force-recreate --wait --wait-timeout 120
+test "$(identity)" = "$key_before"
 docker run --rm --user 1000:1000 --volumes-from ps5upload-fnos busybox:1.37 sh -ec 'test "$(cat /data/custom-probe)" = custom-data'
 unset wizard_data_path
 compose up -d --wait --wait-timeout 120
@@ -64,14 +67,20 @@ echo private > "$wizard_game_path/private.pkg"
 sudo chown -R 1000:1000 "$wizard_game_path" "$wizard_data_path"
 sudo chmod 700 "$wizard_game_path" "$wizard_data_path"
 compose up -d --wait --wait-timeout 120
+private_key=$(identity)
 docker run --rm --user 1000:1000 --volumes-from ps5upload-fnos busybox:1.37 sh -ec 'test "$(cat /pkgs/private.pkg)" = private; ! touch /pkgs/should-fail; test -e /data/.ps5upload/ava/identity'
 test "$(stat -c %u "$TRIM_APPDEST/app.sock")" = 65532
+# Verify the unprivileged serving processes have no effective or permitted capabilities.
+for pid in $(docker top ps5upload-fnos -eo pid,uid,args | awk '$2==1000 || $2==65532 {print $1}'); do
+  sudo awk '/^Cap(Eff|Prm):/ {if ($2 !~ /^0+$/) exit 1}' "/proc/$pid/status"
+done
 docker top ps5upload-fnos -eo uid,gid,args
 docker top ps5upload-fnos -eo uid,gid,args | grep -E '^ *1000 +1000 +/ps5upload-engine'
 docker top ps5upload-fnos -eo uid,gid,args | grep -E '^ *65532 +65532 +/fnos-gateway /gateway/app.sock'
 export wizard_puid=1001 wizard_pgid=1001
 sudo chown -R 1001:1001 "$wizard_game_path" "$wizard_data_path"
 compose up -d --wait --wait-timeout 120
+test "$(identity)" = "$private_key"
 docker top ps5upload-fnos -eo uid,gid,args | grep -E '^ *1001 +1001 +/ps5upload-engine'
 docker run --rm --user 1001:1001 --volumes-from ps5upload-fnos busybox:1.37 sh -ec 'test "$(cat /pkgs/private.pkg)" = private; test -e /data/.ps5upload/ava/identity'
 # Actual gateway socket and engine, simulated fnOS administrator headers.
