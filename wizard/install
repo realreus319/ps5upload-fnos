@@ -1,20 +1,29 @@
 [
   {
-    "stepTitle": "PS5Upload 安装设置",
+    "stepTitle": "部署设置",
     "items": [
       {
         "type": "tips",
-        "helpText": "安装后在飞牛应用设置 → 访问权限中授权游戏目录（建议只读），无需手动输入路径。未授权时使用空白应用目录。仅限可信局域网，禁止直接暴露公网。"
+        "helpText": "游戏目录填写 NAS 上已有目录的绝对路径，例如 /vol1/1000/PS5。留空使用应用私有目录。容器只读挂载游戏目录，应用用户须有读取权限。"
       },
       {
         "type": "text",
+        "field": "wizard_game_path",
+        "label": "游戏目录（宿主机路径）"
+      },
+      {
+        "type": "radio",
         "field": "wizard_allow_ip",
-        "label": "可信局域网 CIDR",
+        "label": "访问范围",
         "initValue": "192.168.1.0/24",
-        "rules": [
+        "options": [
           {
-            "required": true,
-            "message": "请输入可信网段"
+            "label": "仅允许 192.168.1.0/24 网段",
+            "value": "192.168.1.0/24"
+          },
+          {
+            "label": "允许所有 IPv4（仅限可信网络，勿暴露公网）",
+            "value": "0.0.0.0/0"
           }
         ]
       }
