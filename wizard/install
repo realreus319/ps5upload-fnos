@@ -1,0 +1,34 @@
+[
+  {
+    "stepTitle": "PS5Upload 安装设置",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "请填写已授权给应用的游戏目录绝对路径。服务没有独立密码，仅限可信局域网访问。不要直接暴露公网。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_game_path",
+        "label": "游戏目录",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入游戏目录"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_allow_ip",
+        "label": "可信局域网 CIDR",
+        "initValue": "192.168.1.0/24",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入可信网段"
+          }
+        ]
+      }
+    ]
+  }
+]
