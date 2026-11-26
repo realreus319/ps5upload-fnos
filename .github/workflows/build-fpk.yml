@@ -1,0 +1,35 @@
+name: Build FPK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          curl -fL --retry 3 https://static2.fnnas.com/fnpack/fnpack-1.2.3-linux-amd64 -o /tmp/fnpack
+          sudo install -m 755 /tmp/fnpack /usr/local/bin/fnpack
+      - name: Validate scripts and configuration
+        run: |
+          for f in cmd/* build.sh; do bash -n "$f"; done
+          for f in config/* wizard/* app/ui/config; do python3 -m json.tool "$f" >/dev/null; done
+          GAME_PATH=/tmp DATA_PATH=/tmp ENGINE_UID=1000 ENGINE_GID=1000 ALLOW_IP=192.168.1.0/24 docker compose -f app/docker/docker-compose.yaml config -q
+      - name: Package
+        run: |
+          bash build.sh
+          test -s ps5upload.fpk
+          mkdir -p /tmp/fpk
+          cp ps5upload.fpk /tmp/fpk/PS5Upload-fnos-0.1.0.fpk
+          sha256sum /tmp/fpk/*.fpk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PS5Upload-fnos
+          path: /tmp/fpk/*.fpk
+          if-no-files-found: error
