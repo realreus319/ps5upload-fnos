@@ -1,32 +1,7 @@
-# PS5Upload for fnOS
+# PS5Upload for fnOS — native directory review candidate
 
-飞牛 FPK 薄壳，直接使用 [PS5Upload 官方镜像](https://github.com/phantomptr/ps5upload)，不修改上游业务代码。
+本分支是独立 CI 验证候选，不是发布版。保留飞牛 docker-project 和专用应用用户，不请求 root 权限，不修改上游镜像。安装自动创建 PS5Upload 共享目录，游戏目录只读，配置和临时包存于固定命名卷。IP 白名单固定开放 IPv4，仅用于可信网络，禁止直接暴露公网。
 
-## 状态
+已有游戏目录的候选实现依赖飞牛把 TRIM_DATA_ACCESSIBLE_PATHS 注入 Compose，并在原生权限修改时重建容器。当前只支持一个授权目录；空值回退默认共享目录。上述 fnOS 行为需要在真实设备验证；CI 仅验证模拟环境变量、真实镜像启动、读写权限和 FPK 打包。首次安装向导的原生文件夹选择控件仍无公开接口证据，不作已实现声明。
 
-0.1.0 开发预览；未通过 fnOS 实机安装验收。目录选择使用飞牛应用设置 → 访问权限中的系统授权窗口，不自建选择器。当前只映射第一个授权目录；无授权时使用空白私有目录。需要验证权限变更回调及 Docker 重建。没有实现 FN Connect 网关或 HTTPS 串流入口。
-
-## 构建
-
-安装官方 fnpack，使用 Linux、Python 3 和 librsvg2-bin（rsvg-convert），在仓库根目录执行 `bash build.sh`。构建脚本生成图标并设置脚本执行权限，再调用 fnpack build。将生成的 FPK 在飞牛应用中心手动安装。
-
-## 使用
-
-- 安装向导填写可信局域网 CIDR，安装后通过飞牛应用设置 → 访问权限授权游戏目录（不要直接暴露服务到公网）。
-- 官方镜像使用 host 网络、TCP 19113；游戏目录只读挂载到 /pkgs，应用数据单独保存在 TRIM_PKGVAR/data。
-- 飞牛桌面点击 PS5Upload 图标，使用 iframe 打开原始 WebUI。
-- 原生访问权限可修改目录，应用设置可修改可信网段；修改前结束安装和串流任务。
-- 更新：使用飞牛 Docker 管理器对 ps5upload-fnos 项目拉取镜像并重建容器，保留原 Compose、环境变量和数据映射。不要删除数据目录。
-- 如使用浏览器串流，需要 HTTPS 及 WebSocket 代理；本版本不提供公网访问或认证代理。
-
-## 实机验收
-
-1. 安装前确认 19113 未被占用；安装后通过原生权限窗口授权目录。
-2. 检查 install_callback 写入的 .env 是否在 Docker 项目首次启动前被读取。
-3. 检查飞牛 Docker 项目是否使用 ps5upload-fnos 名称，容器 UID/GID 对游戏目录及数据目录是否具备所需权限。
-4. 验证桌面小窗、PS5 发现、读取游戏文件及流式安装。
-5. 修改目录后验证容器重新创建、旧数据保留。
-6. 更新镜像后验证配置保留；启停、卸载行为由飞牛管理。
-7. 验证图形目录授权变更是否触发 config_callback，以及网关接入，不视为当前已验收能力。
-
-参考：[飞牛 Docker 应用案例](https://developer.fnnas.com/docs/examples/docker/) · [上游 Compose](https://github.com/phantomptr/ps5upload/blob/main/engine/compose.yaml)
+不在 CI 发布 Release。部署测试通过后仍须真机验收。参考：官方资源、权限、环境变量文档及 conversun/fnos-apps 的 wizard 参数注入实现。

@@ -4,20 +4,24 @@ services:
     container_name: ps5upload-fnos
     network_mode: host
     restart: unless-stopped
+    user: "${TRIM_UID:-65532}:${TRIM_GID:-65532}"
+    environment:
+      PS5UPLOAD_ALLOW_IP: "0.0.0.0/0"
+      PS5UPLOAD_BROWSE_ROOTS: /pkgs
+      PS5UPLOAD_STAGING_DIR: /data/staging
+    volumes:
+      - type: bind
+        source: "${TRIM_DATA_ACCESSIBLE_PATHS:-${TRIM_DATA_SHARE_PATHS:?missing fnOS shared directory}}"
+        target: /pkgs
+        read_only: true
+        bind:
+          create_host_path: false
+      - ps5upload-data:/data
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
-    user: "${TRIM_UID:-65532}:${TRIM_GID:-65532}"
-    environment:
-      PS5_ADDR: "${wizard_ps5_addr:-}"
-      PS5UPLOAD_ALLOW_IP: "0.0.0.0/0"
-      PS5UPLOAD_BROWSE_ROOTS: /pkgs
-      PS5UPLOAD_STAGING_DIR: /pkgs-staging
-    volumes:
-      - "${wizard_game_path:-${TRIM_PKGVAR}/library}:/pkgs:ro"
-      - "${wizard_staging_path:-${TRIM_PKGVAR}/staging}:/pkgs-staging"
-      - ps5upload-data:/data
 volumes:
   ps5upload-data:
+    name: ps5upload-fnos_ps5upload-data

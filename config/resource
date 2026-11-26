@@ -1,4 +1,16 @@
 {
+  "data-share": {
+    "shares": [
+      {
+        "name": "PS5Upload",
+        "permission": {
+          "rw": [
+            "ps5upload"
+          ]
+        }
+      }
+    ]
+  },
   "docker-project": {
     "projects": [
       {

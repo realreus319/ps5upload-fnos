@@ -1,50 +1,37 @@
-name: Build FPK
+name: Review FPK and real container
 on:
   push:
-    branches: [main]
+    branches: [review/native-directory]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
-  build:
+  review:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Install packaging tools
+      - name: Validate package sources
+        run: |
+          set -euo pipefail
+          for f in cmd/* build.sh; do bash -n "$f"; done
+          for f in config/* wizard/* app/ui/config; do python3 -m json.tool "$f" >/dev/null; done
+          python3 -c 'import json; assert json.load(open("config/privilege"))["defaults"]["run-as"] == "package"'
+      - name: Exercise real engine and storage
+        run: bash tests/smoke.sh
+      - name: Install official packager
         run: |
           sudo apt-get update
           sudo apt-get install -y librsvg2-bin
           curl -fL --retry 3 https://static2.fnnas.com/fnpack/fnpack-1.2.3-linux-amd64 -o /tmp/fnpack
           sudo install -m 755 /tmp/fnpack /usr/local/bin/fnpack
-      - name: Validate scripts and configuration
-        run: |
-          for f in cmd/* build.sh; do bash -n "$f"; done
-          for f in config/* wizard/* app/ui/config; do python3 -m json.tool "$f" >/dev/null; done
-          TRIM_PKGVAR=/tmp TRIM_UID=1000 TRIM_GID=1000 docker compose -f app/docker/docker-compose.yaml config -q
-      - name: Package
+      - name: Build with official fnpack
         run: |
           bash build.sh
           test -s ps5upload.fpk
-          mkdir -p /tmp/fpk
-          version=$(sed -n 's/^version=//p' manifest)
-          cp ps5upload.fpk "/tmp/fpk/PS5Upload-fnos-$version.fpk"
-          sha256sum /tmp/fpk/*.fpk
+          sha256sum ps5upload.fpk
       - uses: actions/upload-artifact@v4
         with:
-          name: PS5Upload-fnos
-          path: /tmp/fpk/*.fpk
+          name: PS5Upload-review-only
+          path: ps5upload.fpk
           if-no-files-found: error
-      - name: Publish FPK preview release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          version=$(sed -n 's/^version=//p' manifest)
-          tag="v$version"
-          cd /tmp/fpk
-          sha256sum *.fpk > SHA256SUMS.txt
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" *.fpk SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
-          else
-            gh release create "$tag" *.fpk SHA256SUMS.txt --target "$GITHUB_SHA" --title "PS5Upload fnOS $version" --notes "Official fnpack build passed. Preview: fnOS device installation and folder authorization are not yet verified." --prerelease --repo "$GITHUB_REPOSITORY"
-          fi
