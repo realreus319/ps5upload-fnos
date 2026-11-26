@@ -1,7 +1,7 @@
 name: Build and release FPK
 on:
   push:
-    branches: [main, review/custom-data]
+    branches: [main, review/custom-data, review/path-validation]
   workflow_dispatch:
 permissions:
   contents: write
@@ -17,6 +17,8 @@ jobs:
           for f in cmd/* build.sh; do bash -n "$f"; done
           for f in config/* wizard/* app/ui/config; do python3 -m json.tool "$f" >/dev/null; done
           python3 -c 'import json; assert json.load(open("config/privilege"))["defaults"]["run-as"] == "package"'
+      - name: Validate directory inputs
+        run: bash tests/validate-paths.sh
       - name: Exercise real engine and storage
         run: bash tests/smoke.sh
       - name: Install official packager

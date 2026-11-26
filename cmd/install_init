@@ -1,0 +1,28 @@
+#!/bin/bash
+# Validate explicitly supplied paths only. Default locations are prepared by fnOS.
+set -euo pipefail
+errors=()
+check_dir() {
+  local label="$1" path="$2" access="$3"
+  [ -n "$path" ] || return 0
+  if [[ "$path" != /* || "$path" == / || "$path" == *:* || "$path" == *$'\r'* || "$path" == *$'\n'* ]]; then
+    errors+=("$label：请输入有效的宿主机目录绝对路径（不能为 / 或包含冒号）。")
+  elif [ ! -d "$path" ]; then
+    errors+=("$label：目录不存在、不是文件夹或应用无权访问：$path。请检查路径及权限后重试。")
+  elif [ ! -r "$path" ] || [ ! -x "$path" ]; then
+    errors+=("$label：应用没有目录读取或访问权限：$path")
+  elif [ "$access" = rw ] && [ ! -w "$path" ]; then
+    errors+=("$label：应用没有目录写入权限：$path")
+  fi
+}
+check_dir "游戏目录" "${wizard_game_path:-}" ro
+check_dir "临时安装包目录" "${wizard_staging_path:-}" rw
+check_dir "应用数据目录" "${wizard_data_path:-}" rw
+if [ "${#errors[@]}" -gt 0 ]; then
+  printf '%s\n' "${errors[@]}" >&2
+  if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+    printf '%s\n' "${errors[@]}" > "$TRIM_TEMP_LOGFILE" || true
+  fi
+  exit 1
+fi
+exit 0
