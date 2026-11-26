@@ -1,10 +1,40 @@
 [
   {
-    "stepTitle": "部署说明",
+    "stepTitle": "部署设置",
     "items": [
       {
         "type": "tips",
-        "helpText": "安装后会创建 PS5Upload 共享目录，可直接放入游戏。若使用已有游戏目录，请在应用设置 → 访问权限中使用飞牛原生选择窗口，仅授权一个游戏目录。临时包保存在持久化数据卷内。服务没有密码，仅在可信网络使用，不要暴露公网。"
+        "helpText": "填写已有的 NAS 绝对路径，例如 /vol1/1000/PS5。游戏目录只读，临时目录需要可写。留空使用默认应用目录。服务无密码，仅限可信网络，不要暴露公网。请先在飞牛文件管理中为应用用户授予必要权限。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_game_path",
+        "label": "游戏目录（宿主机绝对路径）",
+        "initValue": "",
+        "rules": [
+          {
+            "pattern": "^$|^/[^\\r\\n]+$",
+            "message": "请输入绝对路径"
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_ps5_addr",
+        "label": "PS5 IP 地址（可选）",
+        "initValue": ""
+      },
+      {
+        "type": "text",
+        "field": "wizard_staging_path",
+        "label": "临时安装包目录（可选）",
+        "initValue": "",
+        "rules": [
+          {
+            "pattern": "^$|^/[^\\r\\n]+$",
+            "message": "请输入绝对路径"
+          }
+        ]
       }
     ]
   }

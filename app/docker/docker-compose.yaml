@@ -1,3 +1,4 @@
+# fnOS supplies wizard answers directly when creating the project.
 services:
   ps5upload:
     image: ghcr.io/phantomptr/ps5upload-engine-webui:latest
@@ -6,14 +7,20 @@ services:
     restart: unless-stopped
     user: "${TRIM_UID:-65532}:${TRIM_GID:-65532}"
     environment:
+      PS5_ADDR: "${wizard_ps5_addr:-}"
       PS5UPLOAD_ALLOW_IP: "0.0.0.0/0"
       PS5UPLOAD_BROWSE_ROOTS: /pkgs
-      PS5UPLOAD_STAGING_DIR: /data/staging
+      PS5UPLOAD_STAGING_DIR: /staging-root/ps5upload-staging
     volumes:
       - type: bind
-        source: "${TRIM_DATA_ACCESSIBLE_PATHS:-${TRIM_DATA_SHARE_PATHS:?missing fnOS shared directory}}"
+        source: "${wizard_game_path:-${TRIM_DATA_SHARE_PATHS:-/var/apps/ps5upload/share/PS5Upload}}"
         target: /pkgs
         read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${wizard_staging_path:-${TRIM_PKGVAR:-/var/apps/ps5upload/var}}"
+        target: /staging-root
         bind:
           create_host_path: false
       - ps5upload-data:/data

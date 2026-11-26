@@ -3,8 +3,5 @@
     "run-as": "package"
   },
   "username": "ps5upload",
-  "groupname": "ps5upload",
-  "join-groups": [
-    "docker"
-  ]
+  "groupname": "ps5upload"
 }
