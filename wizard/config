@@ -1,0 +1,21 @@
+[
+  {
+    "stepTitle": "修改部署配置",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "留空保留原配置。修改时请先结束所有安装及串流任务。更新镜像请使用飞牛 Docker 管理器。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_game_path",
+        "label": "新游戏目录（可选）"
+      },
+      {
+        "type": "text",
+        "field": "wizard_allow_ip",
+        "label": "新可信网段（可选）"
+      }
+    ]
+  }
+]
