@@ -4,7 +4,7 @@
     "items": [
       {
         "type": "tips",
-        "helpText": "游戏目录填写 NAS 上已有目录的绝对路径，例如 /vol1/1000/PS5。留空使用应用私有目录。容器只读挂载游戏目录，应用用户须有读取权限。"
+        "helpText": "游戏目录填写 NAS 上已有目录的绝对路径，留空使用应用私有目录。服务无密码，仅在可信网络使用，禁止直接暴露公网。"
       },
       {
         "type": "text",
@@ -12,20 +12,14 @@
         "label": "游戏目录（宿主机路径）"
       },
       {
-        "type": "radio",
-        "field": "wizard_allow_ip",
-        "label": "访问范围",
-        "initValue": "192.168.1.0/24",
-        "options": [
-          {
-            "label": "仅允许 192.168.1.0/24 网段",
-            "value": "192.168.1.0/24"
-          },
-          {
-            "label": "允许所有 IPv4（仅限可信网络，勿暴露公网）",
-            "value": "0.0.0.0/0"
-          }
-        ]
+        "type": "text",
+        "field": "wizard_ps5_addr",
+        "label": "PS5 IP 地址（可选）"
+      },
+      {
+        "type": "text",
+        "field": "wizard_staging_path",
+        "label": "临时安装包目录（可选，宿主机路径）"
       }
     ]
   }
