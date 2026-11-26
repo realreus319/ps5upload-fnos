@@ -9,6 +9,7 @@ services:
     environment:
       PS5_ADDR: "${wizard_ps5_addr:-}"
       PS5UPLOAD_ALLOW_IP: "0.0.0.0/0"
+      PS5UPLOAD_BASE_URL: /app/ps5upload/
       PS5UPLOAD_BROWSE_ROOTS: /pkgs
       PS5UPLOAD_STAGING_DIR: /staging-root/ps5upload-staging
     volumes:
@@ -33,3 +34,23 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+  gateway:
+    image: nginx:alpine
+    container_name: ps5upload-fnos-gateway
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - ps5upload
+    command: ["sh", "-ec", "rm -f /gateway/app.sock; umask 000; exec nginx -g 'daemon off;'"]
+    volumes:
+      - type: bind
+        source: "${TRIM_APPDEST:-/var/apps/ps5upload/target}"
+        target: /gateway
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        bind:
+          create_host_path: false
